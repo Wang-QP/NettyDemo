@@ -6,6 +6,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.CharsetUtil;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  * 1、自定义的一个handler 需要继承netty 规定好的某个 HandlerAdapter（规范）
  */
@@ -18,6 +20,50 @@ public class NettyServerHandler extends ChannelInboundHandlerAdapter {
      */
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+
+        // 比如有一个耗时长的业务-> 异步执行 -> 提交该channel 对应的 NIOEventLoop 的 taskQueue 中
+
+        // 解决方案1：用户程序自定义普通任务
+        ctx.channel().eventLoop().execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Thread.sleep(5 * 1000);
+                    ctx.writeAndFlush(Unpooled.copiedBuffer("延时5秒", CharsetUtil.UTF_8));
+                    System.out.println("channel code=" + ctx.channel().hashCode());
+                } catch (InterruptedException e) {
+                    System.out.println("发生异常"+e.getMessage());
+                }
+            }
+        });
+        ctx.channel().eventLoop().execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Thread.sleep(5 * 1000);
+                    ctx.writeAndFlush(Unpooled.copiedBuffer("应该是因为在队列中，所以在上面的5秒延时后，再延时5秒", CharsetUtil.UTF_8));
+                    System.out.println("channel code=" + ctx.channel().hashCode());
+                } catch (InterruptedException e) {
+                    System.out.println("发生异常"+e.getMessage());
+                }
+            }
+        });
+
+        // 解决方案2：用户自定义定时任务 -> 该任务是提交到 scheduleTaskQueue 中
+        ctx.channel().eventLoop().schedule(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Thread.sleep(5 * 1000);
+                    ctx.writeAndFlush(Unpooled.copiedBuffer("延时5秒", CharsetUtil.UTF_8));
+                    System.out.println("channel code=" + ctx.channel().hashCode());
+                } catch (InterruptedException e) {
+                    System.out.println("发生异常"+e.getMessage());
+                }
+            }
+        }, 5, TimeUnit.SECONDS);
+
+
         System.out.println("server ctx = " + ctx);
 
         // 将 msg 转为一个ByteBuf

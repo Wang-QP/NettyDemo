@@ -8,6 +8,8 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.*;
 import io.netty.util.CharsetUtil;
 
+import java.net.URI;
+
 /*
 说明
 1、 SimpleChannelInboundHandler 是 ChannelInboundHandlerAdapter 的子类
@@ -25,12 +27,20 @@ public class TestHttpServerHandler extends SimpleChannelInboundHandler<HttpObjec
             System.out.println("msg 类型=" + msg.getClass());
             System.out.println("客户端地址：" + ctx.channel().remoteAddress());
 
+            HttpRequest httpRequest = (HttpRequest) msg;
+            URI uri = new URI(httpRequest.uri());
+            // 获取 uri ,过滤指定的资源
+            if ("/favicon.ico".equals(uri.getPath())) {
+                System.out.println("请求了 favicon.ico，不做相应");
+                return;
+            }
+
             // 回复信息给浏览器 [ http 协议]
             ByteBuf content = Unpooled.copiedBuffer("hello, 我是服务器", CharsetUtil.UTF_8);
             // 构造一个 http 的相应， 即 httpResponse
             FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK, content);
 
-            response.headers().set(HttpHeaderNames.CONTENT_TYPE, "text/plain");
+            response.headers().set(HttpHeaderNames.CONTENT_TYPE, "text/plain;charset=utf-8");
             response.headers().set(HttpHeaderNames.CONTENT_LENGTH, content.readableBytes());
 
             ctx.writeAndFlush(response);

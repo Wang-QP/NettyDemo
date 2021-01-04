@@ -14,10 +14,13 @@ public class TestServer {
         try {
             ServerBootstrap serverBootstrap = new ServerBootstrap();
 
-            serverBootstrap.group(bossGroup, workerGroup).channel(NioServerSocketChannel.class).childHandler(new TestHttpServerHandler());
+            serverBootstrap.group(bossGroup, workerGroup)
+                    .channel(NioServerSocketChannel.class)
+                    .childHandler(new TestServerInitializer());
 
             ChannelFuture channelFuture = serverBootstrap.bind(8888).sync();
 
+            System.out.println("服务器启动完成...");
             channelFuture.channel().closeFuture().sync();
         } finally {
             bossGroup.shutdownGracefully();
