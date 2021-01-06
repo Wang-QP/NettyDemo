@@ -15,7 +15,6 @@ import java.net.URI;
 1、 SimpleChannelInboundHandler 是 ChannelInboundHandlerAdapter 的子类
 2、 HttpObject 客户端和服务器端相互调用通讯的数据被封装成 HttpObject
  */
-@ChannelHandler.Sharable
 public class TestHttpServerHandler extends SimpleChannelInboundHandler<HttpObject> {
 
     // channelRead0 读取客户端数据
